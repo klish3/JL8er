@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>JL8 — A better reader for Yale Stewart's webcomic</title>
+<meta name="description" content="A fast, modern reader for JL8, the webcomic by Yale Stewart featuring the Justice League as 8-year-olds. Keyboard navigation, resume reading, archive, dark mode." />
+<meta name="theme-color" content="#0b1020" />
+<meta property="og:title" content="JL8 — A better reader" />
+<meta property="og:description" content="The Justice League, age 8. A faster, friendlier way to read Yale Stewart's JL8." />
+<meta property="og:type" content="website" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230b1020'/%3E%3Ctext x='50%25' y='54%25' font-family='Arial Black,Arial,sans-serif' font-weight='900' font-size='30' fill='%23ffd23f' text-anchor='middle' dominant-baseline='middle'%3EJL8%3C/text%3E%3C/svg%3E" />
+<link rel="preconnect" href="https://limbero.org" />
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+<div id="progressbar" aria-hidden="true"></div>
+
+<header class="topbar" id="topbar">
+  <a class="brand" href="#/" aria-label="JL8 home">
+    <span class="brand-mark">JL8</span>
+    <span class="brand-sub">the reader</span>
+  </a>
+
+  <nav class="navctl" id="navctl" aria-label="Comic navigation">
+    <button class="nav-btn" id="btn-first" title="First (Home)" aria-label="First comic">&#124;&#9664;</button>
+    <button class="nav-btn" id="btn-prev" title="Previous (←)" aria-label="Previous comic">&#9664;</button>
+    <button class="counter" id="counter" title="Jump to a number (G)" aria-label="Jump to comic number">
+      <span id="counter-cur">—</span><span class="counter-sep">/</span><span id="counter-total">—</span>
+    </button>
+    <button class="nav-btn" id="btn-next" title="Next (→)" aria-label="Next comic">&#9654;</button>
+    <button class="nav-btn" id="btn-last" title="Latest (End)" aria-label="Latest comic">&#9654;&#124;</button>
+  </nav>
+
+  <div class="actions">
+    <button class="icon-btn" id="btn-archive" title="Archive (A)" aria-label="Open archive">
+      <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M4 5h16v3H4zm1 5h14v9H5zm4 2v2h6v-2z"/></svg>
+    </button>
+    <button class="icon-btn" id="btn-fit" title="Toggle fit width / actual size (W)" aria-label="Toggle image fit">
+      <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M4 4h7v2H6v5H4zm9 0h7v7h-2V6h-5zM6 13v5h5v2H4v-7zm12 0h2v7h-7v-2h5z"/></svg>
+    </button>
+    <button class="icon-btn" id="btn-theme" title="Toggle theme (T)" aria-label="Toggle light/dark theme">
+      <svg class="ico-moon" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M12 3a9 9 0 1 0 9 9 7 7 0 0 1-9-9z"/></svg>
+      <svg class="ico-sun" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M12 7a5 5 0 1 0 0 10 5 5 0 0 0 0-10zm0-6h0v3m0 16v3M3 12H0m24 0h-3M5 5 3 3m18 18-2-2M5 19l-2 2M21 3l-2 2"/><circle cx="12" cy="12" r="4" fill="currentColor"/></svg>
+    </button>
+    <button class="icon-btn" id="btn-about" title="About (?)" aria-label="About">
+      <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M11 7h2v2h-2zm0 4h2v6h-2zm1-9a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm0 2a8 8 0 1 1 0 16 8 8 0 0 1 0-16z"/></svg>
+    </button>
+  </div>
+</header>
+
+<!-- READER -->
+<main id="reader" class="reader" tabindex="-1">
+  <button class="edge-btn edge-prev" id="edge-prev" title="Previous (←)" aria-label="Previous comic">&#9664;</button>
+  <button class="edge-btn edge-next" id="edge-next" title="Next (→)" aria-label="Next comic">&#9654;</button>
+
+  <div class="stage" id="stage">
+    <div class="comic-head">
+      <h1 class="comic-title" id="comic-title">JL8</h1>
+      <p class="comic-meta" id="comic-meta"></p>
+    </div>
+    <div class="strip" id="strip" aria-live="polite"></div>
+    <div class="comic-foot">
+      <button class="big-next" id="big-next">Next page <span aria-hidden="true">&#9654;</span></button>
+    </div>
+  </div>
+</main>
+
+<!-- ARCHIVE -->
+<section id="archive" class="archive" hidden>
+  <div class="archive-bar">
+    <h2>Archive</h2>
+    <div class="archive-tools">
+      <label class="search">
+        <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M10 4a6 6 0 1 0 3.5 10.9l4.3 4.3 1.4-1.4-4.3-4.3A6 6 0 0 0 10 4m0 2a4 4 0 1 1 0 8 4 4 0 0 1 0-8"/></svg>
+        <input id="archive-search" type="number" min="1" placeholder="Jump to #…" inputmode="numeric" />
+      </label>
+      <button class="chip" id="chip-unread" title="Show only unread">Unread</button>
+      <button class="chip" id="chip-clear" title="Reset read history">Reset progress</button>
+    </div>
+  </div>
+  <div class="grid" id="grid"></div>
+</section>
+
+<!-- ABOUT -->
+<div id="about" class="modal" hidden>
+  <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="about-title">
+    <button class="modal-close" id="about-close" aria-label="Close">&times;</button>
+    <h2 id="about-title">About this reader</h2>
+    <p><strong>JL8</strong> is a webcomic by <a href="https://www.yalestewart.com/" target="_blank" rel="noopener">Yale Stewart</a> — the Justice League reimagined as eight-year-olds. It ran for <strong id="about-count">270</strong> entries.</p>
+    <p>This is an unofficial, fan-made reader built to be faster and friendlier than flipping pages one server round-trip at a time: the whole catalog is indexed up front, so navigation is instant, comics preload as you read, and your place is remembered.</p>
+    <h3>Keyboard shortcuts</h3>
+    <ul class="keys">
+      <li><kbd>←</kbd> <kbd>→</kbd> previous / next</li>
+      <li><kbd>Home</kbd> <kbd>End</kbd> first / latest</li>
+      <li><kbd>G</kbd> jump to a number</li>
+      <li><kbd>A</kbd> archive · <kbd>W</kbd> fit width · <kbd>T</kbd> theme</li>
+      <li><kbd>?</kbd> this dialog · <kbd>Esc</kbd> close</li>
+    </ul>
+    <p class="credit">Characters &copy; DC Comics · Creative content &copy; <a href="https://www.yalestewart.com/" target="_blank" rel="noopener">Yale Stewart</a>. Images are served from the original host at <a href="https://limbero.org/jl8" target="_blank" rel="noopener">limbero.org/jl8</a>. This reader is a tribute and claims no ownership.</p>
+  </div>
+</div>
+
+<div id="toast" class="toast" hidden></div>
+
+<script src="app.js"></script>
+</body>
+</html>
