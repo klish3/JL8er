@@ -84,3 +84,10 @@ Characters © DC Comics. Creative content © **[Yale Stewart](https://www.yalest
 Comic images are served from the original reader at
 [limbero.org/jl8](https://limbero.org/jl8) (site by Axel Samuelsson).
 This reader is a tribute and claims no ownership of the comic.
+
+## Also in this repo
+
+This repo also carries **[Jira Data Bridge](jira-data-bridge/README.md)**, a self-contained
+React + Vite tool for pulling data out of Jira — JQL search with CSV/JSON export, a project
+browser, and a read-only API explorer. It lives entirely in `jira-data-bridge/` with its own
+toolchain; the comic reader remains dependency-free.
