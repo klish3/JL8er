@@ -8,6 +8,8 @@ import { StatusChip } from './StatusChip'
 
 const DEFAULT_JQL = 'ORDER BY updated DESC'
 const LOAD_ALL_CAP = 500
+// Hard bound on requests per "Load all" click, independent of the issue cap.
+const LOAD_ALL_MAX_PAGES = 40
 
 export function IssuesPanel({
   client,
@@ -103,14 +105,20 @@ export function IssuesPanel({
     try {
       let cursor: SearchCursor | undefined = next
       let count = issues.length
-      while (cursor !== undefined && count < LOAD_ALL_CAP) {
+      let pages = 0
+      while (cursor !== undefined && count < LOAD_ALL_CAP && pages < LOAD_ALL_MAX_PAGES) {
+        pages++
         const page = await client.searchIssues(executed, cursor)
         if (seqRef.current !== id) return
         count += page.issues.length
-        setIssues((prev) => [...prev, ...page.issues])
+        if (page.issues.length > 0) setIssues((prev) => [...prev, ...page.issues])
         if (page.total !== undefined) setTotal(page.total)
         cursor = page.isLast ? undefined : page.next
         setNext(cursor)
+        // Cloud's /search/jql can return an empty page that still carries a
+        // next token; stop rather than spin on it forever (the cursor stays
+        // live so "Load more" remains available).
+        if (page.issues.length === 0) break
       }
     } catch (err) {
       if (seqRef.current !== id) return
@@ -182,7 +190,7 @@ export function IssuesPanel({
               {busy === 'more' ? 'Loading…' : 'Load more'}
             </button>
           )}
-          {next && (
+          {next && issues.length < LOAD_ALL_CAP && (
             <button
               type="button"
               className="btn"

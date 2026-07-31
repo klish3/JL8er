@@ -21,6 +21,15 @@ export function loadConnection(): ConnectionConfig | null {
     ) {
       return null
     }
+    // Re-validate the URL on load: auto-connect will send the stored token to
+    // this host, so a tampered baseUrl must not be trusted just because it
+    // round-tripped through storage.
+    try {
+      const protocol = new URL(record.baseUrl).protocol
+      if (protocol !== 'http:' && protocol !== 'https:') return null
+    } catch {
+      return null
+    }
     // A stored connection only exists because it was saved with remember on.
     return {
       baseUrl: record.baseUrl,

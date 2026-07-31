@@ -21,6 +21,7 @@ export interface JiraEndpoint {
   pathParams?: EndpointParam[]
   queryParams?: EndpointParam[]
   cloudOnly?: boolean
+  serverOnly?: boolean
 }
 
 const G = {
@@ -205,6 +206,17 @@ export const JIRA_ENDPOINTS: JiraEndpoint[] = [
     ],
   },
   {
+    id: 'get-project-role-actors',
+    group: G.projects,
+    label: 'Project role members',
+    path: '/rest/api/{apiVersion}/project/{projectIdOrKey}/role/{id}',
+    description: 'Returns the users and groups assigned to one project role (its actors).',
+    pathParams: [
+      { name: 'projectIdOrKey', example: 'PROJ', description: 'Project key or numeric ID' },
+      { name: 'id', example: '10002', description: 'Project role ID (from Project roles)' },
+    ],
+  },
+  {
     id: 'get-project-properties',
     group: G.projects,
     label: 'Project property keys',
@@ -264,6 +276,16 @@ export const JIRA_ENDPOINTS: JiraEndpoint[] = [
     queryParams: [
       { name: 'maxResults', example: '50', description: 'Page size' },
       { name: 'startAt', example: '0', description: 'Page offset' },
+    ],
+  },
+  {
+    id: 'get-worklogs-updated',
+    group: G.issues,
+    label: 'Worklogs updated since',
+    path: '/rest/api/{apiVersion}/worklog/updated',
+    description: 'Returns IDs of worklogs updated after a timestamp — the primitive for incremental worklog sync.',
+    queryParams: [
+      { name: 'since', example: '1698796800000', description: 'Epoch milliseconds; worklogs updated at or after this time' },
     ],
   },
   {
@@ -360,6 +382,35 @@ export const JIRA_ENDPOINTS: JiraEndpoint[] = [
     ],
   },
   {
+    id: 'get-createmeta-issuetypes',
+    group: G.issues,
+    label: 'Create metadata: issue types',
+    path: '/rest/api/{apiVersion}/issue/createmeta/{projectIdOrKey}/issuetypes',
+    description: 'Returns the issue types creatable in a project — the createmeta replacement on Cloud and Jira DC 9+.',
+    pathParams: [
+      { name: 'projectIdOrKey', example: 'PROJ', description: 'Project key or numeric ID' },
+    ],
+    queryParams: [
+      { name: 'maxResults', example: '50', description: 'Page size' },
+      { name: 'startAt', example: '0', description: 'Page offset' },
+    ],
+  },
+  {
+    id: 'get-createmeta-fields',
+    group: G.issues,
+    label: 'Create metadata: fields',
+    path: '/rest/api/{apiVersion}/issue/createmeta/{projectIdOrKey}/issuetypes/{issueTypeId}',
+    description: 'Returns the creatable fields for one issue type in a project (createmeta replacement).',
+    pathParams: [
+      { name: 'projectIdOrKey', example: 'PROJ', description: 'Project key or numeric ID' },
+      { name: 'issueTypeId', example: '10001', description: 'Numeric issue type ID' },
+    ],
+    queryParams: [
+      { name: 'maxResults', example: '50', description: 'Page size' },
+      { name: 'startAt', example: '0', description: 'Page offset' },
+    ],
+  },
+  {
     id: 'issue-picker',
     group: G.issues,
     label: 'Issue picker suggestions',
@@ -392,6 +443,7 @@ export const JIRA_ENDPOINTS: JiraEndpoint[] = [
     label: 'Search issues (classic)',
     path: '/rest/api/{apiVersion}/search',
     description: 'Classic offset-paginated JQL search; Server/DC only — Cloud removed this endpoint in 2025 in favour of /search/jql.',
+    serverOnly: true,
     queryParams: [
       { name: 'jql', example: 'project = PROJ ORDER BY created DESC', description: 'JQL query' },
       { name: 'startAt', example: '0', description: 'Page offset' },
@@ -492,6 +544,18 @@ export const JIRA_ENDPOINTS: JiraEndpoint[] = [
     queryParams: [
       { name: 'query', example: 'jira', description: 'Text matched against group names' },
       { name: 'maxResults', example: '20', description: 'Maximum groups to return' },
+    ],
+  },
+  {
+    id: 'find-users-and-groups',
+    group: G.users,
+    label: 'User & group picker',
+    path: '/rest/api/{apiVersion}/groupuserpicker',
+    description: 'Returns users and groups matching one query, as used by combined assignee/mention pickers.',
+    queryParams: [
+      { name: 'query', example: 'ada', description: 'Text matched against user and group names' },
+      { name: 'maxResults', example: '20', description: 'Maximum results per category' },
+      { name: 'projectId', example: '10000', description: 'Restrict user results to a project' },
     ],
   },
 
@@ -680,6 +744,17 @@ export const JIRA_ENDPOINTS: JiraEndpoint[] = [
       { name: 'expand', example: 'transitions,statuses', description: 'Extra workflow details to include' },
       { name: 'maxResults', example: '50', description: 'Page size' },
       { name: 'startAt', example: '0', description: 'Page offset' },
+    ],
+  },
+  {
+    id: 'list-workflows',
+    group: G.workflows,
+    label: 'All workflows',
+    path: '/rest/api/{apiVersion}/workflow',
+    description: 'Returns all workflows on the instance; Server/DC only (Cloud uses Search workflows).',
+    serverOnly: true,
+    queryParams: [
+      { name: 'workflowName', example: 'jira', description: 'Filter by workflow name' },
     ],
   },
   {

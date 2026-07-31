@@ -10,6 +10,23 @@ interface RawResult {
   body: unknown
 }
 
+/** Clipboard fallback for non-secure origins where navigator.clipboard is absent. */
+function legacyCopy(text: string): boolean {
+  try {
+    const area = document.createElement('textarea')
+    area.value = text
+    area.style.position = 'fixed'
+    area.style.opacity = '0'
+    document.body.appendChild(area)
+    area.select()
+    const ok = document.execCommand('copy')
+    area.remove()
+    return ok
+  } catch {
+    return false
+  }
+}
+
 /** Renders a path template with the remaining {placeholders} highlighted. */
 function PathTemplate({ template }: { template: string }) {
   return (
@@ -106,23 +123,34 @@ export function ApiExplorer({ client }: { client: JiraClient }) {
         : JSON.stringify(result.body, null, 2)
 
   const copyResult = () => {
-    if (!navigator.clipboard) return
-    navigator.clipboard
-      .writeText(resultText)
-      .then(() => setCopied(true))
-      .catch(() => {})
+    // navigator.clipboard is undefined on non-secure origins (e.g. a LAN http
+    // dev server); fall back to a hidden textarea so the button still works.
+    if (navigator.clipboard?.writeText) {
+      navigator.clipboard
+        .writeText(resultText)
+        .then(() => setCopied(true))
+        .catch(() => legacyCopy(resultText) && setCopied(true))
+      return
+    }
+    if (legacyCopy(resultText)) setCopied(true)
   }
 
   const downloadResult = () => {
-    const name = endpoint ? `jira-${endpoint.id}.json` : 'jira-response.json'
-    downloadFile(name, resultText, 'application/json')
+    // Non-JSON responses (HTML error pages, plain text) shouldn't claim .json.
+    const isJson = result?.body !== undefined
+    const ext = isJson ? 'json' : 'txt'
+    const mime = isJson ? 'application/json' : 'text/plain;charset=utf-8'
+    const name = endpoint ? `jira-${endpoint.id}.${ext}` : `jira-response.${ext}`
+    downloadFile(name, resultText, mime)
   }
 
   return (
     <div className="panel">
       <p className="explorer-hint">
         This tab issues read-only GET requests with your connected credentials.
-        {isServer ? ' Cloud-only endpoints are disabled for Server / Data Center connections.' : ''}
+        {isServer
+          ? ' Cloud-only endpoints are disabled for this Server / Data Center connection.'
+          : ' Server / Data Center–only endpoints are disabled for this Cloud connection.'}
       </p>
 
       <div className="field">
@@ -139,9 +167,14 @@ export function ApiExplorer({ client }: { client: JiraClient }) {
           {ENDPOINT_GROUPS.map((group) => (
             <optgroup key={group} label={group}>
               {JIRA_ENDPOINTS.filter((e) => e.group === group).map((e) => (
-                <option key={e.id} value={e.id} disabled={e.cloudOnly === true && isServer}>
+                <option
+                  key={e.id}
+                  value={e.id}
+                  disabled={(e.cloudOnly === true && isServer) || (e.serverOnly === true && !isServer)}
+                >
                   {e.label}
                   {e.cloudOnly ? ' (Cloud only)' : ''}
+                  {e.serverOnly ? ' (Server only)' : ''}
                 </option>
               ))}
             </optgroup>

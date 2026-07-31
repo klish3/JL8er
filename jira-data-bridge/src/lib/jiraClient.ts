@@ -92,7 +92,8 @@ export class JiraClient {
     }
     const projects: JiraProject[] = []
     let startAt = 0
-    for (let page = 0; page < 20; page++) {
+    // Up to 40 pages × 50 = 2000 projects; a safety bound, not an expected limit.
+    for (let page = 0; page < 40; page++) {
       const result = await this.request<{ values?: JiraProject[]; isLast?: boolean }>(
         '/project/search',
         { startAt, maxResults: 50, expand: 'lead' },

@@ -1,7 +1,7 @@
 # Jira Data Bridge
 
 A single-page tool for pulling data **out** of Jira: paste your site URL and a token,
-browse projects, run JQL, export CSV/JSON, and poke any of 60+ read-only REST endpoints —
+browse projects, run JQL, export CSV/JSON, and poke any of 80+ read-only REST endpoints —
 all from the browser, nothing stored server-side.
 
 Built with React 19 + TypeScript + Vite 6. Lives in this repo but is fully self-contained;
@@ -16,7 +16,7 @@ the comic reader at the repo root stays dependency-free.
   out to the issue in Jira). Export everything loaded as **CSV** or **JSON**.
 - **Projects** — a searchable card grid of every project you can see. **View issues** jumps
   to the Issues tab with `project = KEY` prefilled and runs it.
-- **API Explorer** — a grouped dropdown cataloging 60+ Jira REST **GET** endpoints
+- **API Explorer** — a grouped dropdown cataloging 80+ Jira REST **GET** endpoints
   (core API v3/v2 plus Agile 1.0: myself, serverInfo, projects, issues, comments, worklogs,
   transitions, search, users, groups, fields, statuses, priorities, filters, dashboards,
   permissions, boards, sprints, epics, backlog, …). Pick one, fill the auto-generated
@@ -72,7 +72,9 @@ Browsers can't call Jira's REST API cross-origin, so `vite.config.ts` registers 
 middleware at `/jira-proxy` on both the dev and preview servers. The client sends every
 request there with an `x-jira-base-url` header naming the Jira site; the middleware relays
 the request to that URL, forwarding only the `Authorization` and `Content-Type` headers,
-and streams the response back.
+and returns the response. To keep the relay from becoming an SSRF vector, it answers **only
+requests whose `Host` is `localhost`** and forwards **GET/HEAD only** — so a rebound
+attacker origin, a LAN caller under `--host`, or any write attempt is refused.
 
 **Consequence:** the built `dist/` is not standalone. Hosting it as static files requires
 putting an equivalent `/jira-proxy` relay in front (any small reverse-proxy will do), or
@@ -97,10 +99,13 @@ on both.
 - With **Remember on this device** checked, your token sits **unencrypted in
   `localStorage`**, readable by any JavaScript running on the origin. Use a scoped API
   token you can revoke, and don't check the box on shared machines.
-- The dev proxy relays to **any URL the browser supplies** via `x-jira-base-url`. Keep the
-  dev server on localhost; don't expose it to your network or the internet.
-- Everything is read-only: the API Explorer catalog contains only GET endpoints, and the
-  app performs no writes to Jira.
+- The dev proxy relays to **any URL the browser supplies** via `x-jira-base-url`, so it
+  only serves callers whose `Host` is `localhost` (defeating DNS-rebinding and `--host`
+  LAN access). Keep the dev server on localhost regardless; don't expose it to your network
+  or the internet.
+- Everything is read-only: the API Explorer catalog contains only GET endpoints, **and the
+  proxy itself refuses anything but GET/HEAD** — the guarantee holds at the relay, not just
+  in the client.
 
 ## Project structure
 
@@ -108,8 +113,10 @@ on both.
 vite.config.ts            React plugin + the /jira-proxy middleware (dev & preview)
 src/
   lib/jiraClient.ts       auth headers, proxy routing, pagination (both API flavors)
-  lib/endpoints.ts        the API Explorer catalog: 60+ GET endpoints with param specs
-  components/             ConnectForm, IssuesTab, ProjectsTab, ApiExplorerTab, modals…
+  lib/endpoints.ts        the API Explorer catalog: 80+ GET endpoints with param specs
+  lib/{storage,export,adf,format}.ts  persistence, CSV/JSON export, ADF→text, dates
+  components/             ConnectionForm, IssuesPanel, ProjectsPanel, ApiExplorer,
+                          IssueDetail, StatusChip
 ```
 
 One repo quirk: the **root** `.gitignore` ignores `package.json`/`package-lock.json`

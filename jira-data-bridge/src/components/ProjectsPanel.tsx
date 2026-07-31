@@ -12,6 +12,8 @@ export function ProjectsPanel({
   const [projects, setProjects] = useState<JiraProject[] | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [filter, setFilter] = useState('')
+  // Bumped to re-run the load effect (e.g. after a transient failure).
+  const [reloadKey, setReloadKey] = useState(0)
 
   useEffect(() => {
     let cancelled = false
@@ -28,7 +30,7 @@ export function ProjectsPanel({
     return () => {
       cancelled = true
     }
-  }, [client])
+  }, [client, reloadKey])
 
   const query = filter.trim().toLowerCase()
   const visible = (projects ?? []).filter(
@@ -58,7 +60,14 @@ export function ProjectsPanel({
 
       {error !== null ? (
         <div className="notice notice-error" role="alert">
-          {error}
+          <span>{error}</span>
+          <button
+            type="button"
+            className="btn btn-ghost notice-action"
+            onClick={() => setReloadKey((k) => k + 1)}
+          >
+            Retry
+          </button>
         </div>
       ) : projects === null ? (
         <div className="loading">

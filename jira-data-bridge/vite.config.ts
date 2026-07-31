@@ -4,6 +4,22 @@ import react from '@vitejs/plugin-react'
 const PROXY_PREFIX = '/jira-proxy'
 
 /**
+ * Only requests whose Host is loopback are served. This runs ahead of Vite's
+ * own host-check middleware, so without it the proxy would be reachable via
+ * DNS rebinding (a page on attacker.com rebound to 127.0.0.1) or, under
+ * `--host`, directly from the LAN — turning the relay into an SSRF vector.
+ * The browser sets Host from the page origin and JS cannot forge it, so
+ * pinning to localhost defeats both.
+ */
+function isLoopbackHost(hostHeader: string | undefined): boolean {
+  if (!hostHeader) return false
+  const host = hostHeader.startsWith('[')
+    ? hostHeader.slice(1, hostHeader.indexOf(']')) // bracketed IPv6, e.g. [::1]:5173
+    : hostHeader.split(':')[0]
+  return host === 'localhost' || host === '127.0.0.1' || host === '::1'
+}
+
+/**
  * Browsers cannot call Jira's REST API directly because Jira does not send
  * CORS headers. This middleware runs inside the Vite dev/preview server and
  * forwards requests to the Jira site named in the `x-jira-base-url` header,
@@ -17,6 +33,19 @@ const jiraProxyHandler: Connect.SimpleHandleFunction = (req, res) => {
   }
 
   void (async () => {
+    if (!isLoopbackHost(req.headers.host)) {
+      sendJson(403, { errorMessages: ['jira-proxy only accepts requests from localhost.'] })
+      return
+    }
+
+    // The app is a read-only data bridge; refuse anything that could mutate Jira
+    // so the guarantee holds at the proxy, not just in the client's endpoint list.
+    const method = (req.method ?? 'GET').toUpperCase()
+    if (method !== 'GET' && method !== 'HEAD') {
+      sendJson(405, { errorMessages: ['jira-proxy relays read-only GET/HEAD requests only.'] })
+      return
+    }
+
     const rawHeader = req.headers['x-jira-base-url']
     const baseHeader = Array.isArray(rawHeader) ? rawHeader[0] : rawHeader
 

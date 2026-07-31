@@ -18,12 +18,16 @@ export function flattenIssue(issue: JiraIssue): Record<string, string> {
 }
 
 function escapeCsv(value: string): string {
+  // Neutralize spreadsheet formula injection: a cell starting with =, +, -, @
+  // or a control char is executed as a formula by Excel/Sheets, so
+  // attacker-controlled Jira text (summaries, display names) could run on open.
+  let cell = /^[=+\-@\t\r]/.test(value) ? "'" + value : value
   // RFC 4180: quote values containing commas, quotes, or line breaks and
   // double any embedded quotes.
-  if (/[",\r\n]/.test(value)) {
-    return '"' + value.replaceAll('"', '""') + '"'
+  if (/[",\r\n]/.test(cell)) {
+    cell = '"' + cell.replaceAll('"', '""') + '"'
   }
-  return value
+  return cell
 }
 
 export function toCsv(rows: Record<string, string>[]): string {
@@ -33,7 +37,9 @@ export function toCsv(rows: Record<string, string>[]): string {
   for (const row of rows) {
     lines.push(headers.map((header) => escapeCsv(row[header] ?? '')).join(','))
   }
-  return lines.join('\r\n') + '\r\n'
+  // Lead with a UTF-8 BOM so Excel on Windows detects the encoding instead of
+  // rendering non-ASCII text (accents, CJK, Cyrillic) as mojibake.
+  return '﻿' + lines.join('\r\n') + '\r\n'
 }
 
 export function downloadFile(filename: string, content: string, mime: string): void {

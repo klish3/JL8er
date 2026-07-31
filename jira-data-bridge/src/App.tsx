@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import type { ConnectionConfig, JiraUser } from './types'
-import { JiraClient } from './lib/jiraClient'
+import { JiraClient, JiraError } from './lib/jiraClient'
 import { clearConnection, loadConnection, saveConnection } from './lib/storage'
 import { ApiExplorer } from './components/ApiExplorer'
 import { ConnectionForm } from './components/ConnectionForm'
@@ -50,6 +50,7 @@ export default function App() {
   const [restoring, setRestoring] = useState<boolean>(() => loadConnection() !== null)
   const [tab, setTab] = useState<Tab>('issues')
   const [preset, setPreset] = useState<Preset | null>(null)
+  const [restoreError, setRestoreError] = useState<string | null>(null)
 
   const connect = useCallback(async (config: ConnectionConfig) => {
     const client = new JiraClient(config)
@@ -63,7 +64,21 @@ export default function App() {
     if (!saved) return
     let active = true
     connect(saved)
-      .catch(() => clearConnection())
+      .catch((err: unknown) => {
+        // Only wipe stored credentials when Jira actively rejects them. A
+        // transient failure (network, VPN, 502 from the proxy) must keep them
+        // so a reload can succeed instead of forcing the user to re-enter.
+        if (err instanceof JiraError && (err.status === 401 || err.status === 403)) {
+          clearConnection()
+        }
+        if (active) {
+          setRestoreError(
+            err instanceof Error
+              ? `Could not restore your saved connection: ${err.message}`
+              : 'Could not restore your saved connection.',
+          )
+        }
+      })
       .finally(() => {
         if (active) setRestoring(false)
       })
@@ -145,6 +160,11 @@ export default function App() {
           </div>
         ) : (
           <div className="connect-wrap">
+            {restoreError && (
+              <div className="notice notice-error connect-notice" role="alert">
+                {restoreError}
+              </div>
+            )}
             <ConnectionForm onConnect={connect} />
           </div>
         )}
