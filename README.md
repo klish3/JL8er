@@ -84,3 +84,15 @@ Characters © DC Comics. Creative content © **[Yale Stewart](https://www.yalest
 Comic images are served from the original reader at
 [limbero.org/jl8](https://limbero.org/jl8) (site by Axel Samuelsson).
 This reader is a tribute and claims no ownership of the comic.
+
+## Also in this repo
+
+This repo also carries **[Jira Data Bridge](jira-data-bridge/README.md)**, a self-contained
+React + Vite tool for pulling data out of Jira — JQL search with CSV/JSON export, a project
+browser, and a read-only API explorer. It lives entirely in `jira-data-bridge/` with its own
+toolchain; the comic reader remains dependency-free.
+
+Alongside it, **[bridge-consumer](bridge-consumer/README.md)** is a small starter project
+that fetches its Jira and Confluence data *through* the bridge (a TypeScript helper plus a
+`CLAUDE.md` that routes Atlassian data needs to the bridge automatically). Both are separate
+from the reader and from each other.
