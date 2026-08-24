@@ -1,0 +1,17 @@
+{
+  "name": "bridge-consumer",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Starter project that pulls Jira and Confluence data through the Jira Data Bridge.",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "start": "tsx src/index.ts",
+    "example": "tsx src/example.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^22",
+    "tsx": "^4.19.2",
+    "typescript": "~5.8.3"
+  }
+}

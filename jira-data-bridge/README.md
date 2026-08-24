@@ -117,7 +117,23 @@ src/
   lib/{storage,export,adf,format}.ts  persistence, CSV/JSON export, ADF→text, dates
   components/             ConnectionForm, IssuesPanel, ProjectsPanel, ApiExplorer,
                           IssueDetail, StatusChip
+docs/                     developer documentation (see below)
 ```
+
+## Documentation
+
+Developer docs live in [`docs/`](./docs/):
+
+| Doc | What's in it |
+| --- | --- |
+| [FUNCTIONALITY.md](./docs/FUNCTIONALITY.md) | Every feature, control, and behavior — the complete reference, incl. the `JiraClient` API surface and the 86-endpoint catalog |
+| [ARCHITECTURE.md](./docs/ARCHITECTURE.md) | How it's wired: module map, request lifecycle, the proxy design, state model, and how to extend it |
+| [INTEGRATION.md](./docs/INTEGRATION.md) | The `/jira-proxy` HTTP contract for other tools/agents that pull Atlassian data **through** the bridge (incl. the Confluence relay path) |
+
+**Consuming the bridge from another project:** a sibling companion project,
+[`../bridge-consumer`](../bridge-consumer/), is wired to fetch all its Jira/Confluence data
+through this bridge — a small TypeScript helper plus a `CLAUDE.md` that tells an agent to
+route Atlassian data needs here. See [INTEGRATION.md](./docs/INTEGRATION.md).
 
 One repo quirk: the **root** `.gitignore` ignores `package.json`/`package-lock.json`
 (the comic reader is deliberately dependency-free), so this directory's `.gitignore`
